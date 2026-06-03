@@ -149,19 +149,19 @@ Escolha uma opcao: 5
 --- RECOMENDACOES DE IRRIGACAO ---
 
 Setor 1
-  Risco de desperdicio: 30%
+  Risco de desperdicio: 0%
+  Recomendacao:         IRRIGAR IMEDIATO
+  Motivo:               Solo seco com calor e luz forte. Cultura em estresse idrico.
+
+Setor 2
+  Risco de desperdicio: 20%
   Recomendacao:         MONITORAR
   Motivo:               Condicoes estaveis. Aguardar a proxima leitura.
 
-Setor 2
-  Risco de desperdicio: 60%
-  Recomendacao:         NAO IRRIGAR
-  Motivo:               Condicoes indicam alto risco de desperdicio.
-
 Setor 3
-  Risco de desperdicio: 0%
-  Recomendacao:         IRRIGAR MODERADAMENTE
-  Motivo:               Umidade abaixo do ideal. Aplicar irrigacao leve.
+  Risco de desperdicio: 100%
+  Recomendacao:         NAO IRRIGAR
+  Motivo:               Solo encharcado. Risco de doencas e perda de raiz.
 ```
 
 E ao calcular a economia:
@@ -169,25 +169,41 @@ E ao calcular a economia:
 ```
 --- ECONOMIA ESTIMADA ---
 Consumo tradicional (referencia): 50,000 L
-Consumo com AgroSmart:            8,333 L
-Economia estimada:                41,667 L
-Economia em reais:                R$ 500.00
+Consumo com AgroSmart:            16,666 L
+Economia estimada:                33,334 L
+Economia em reais:                R$ 400.00
 ```
 
 ## Regras de decisão (resumo)
 
-- **Umidade**
-  - `< 30%` → solo seco
-  - `30% – 70%` → ideal
-  - `> 70%` → solo encharcado
+As faixas e classificações abaixo são as mesmas usadas pelo *firmware* do
+Arduino (sensores DHT22, LDR e sensor de umidade do solo), de modo que o
+sistema em Python interpreta os dados exatamente como o hardware:
+
+- **Umidade do solo**
+  - `< 20%` → SECO
+  - `20% – 60%` → IDEAL
+  - `60% – 70%` → UMIDO
+  - `> 70%` → EXCESSO
 - **Temperatura**
-  - `< 10 °C` → frio extremo
-  - `10 – 32 °C` → ideal
-  - `> 32 °C` → calor intenso
-- **Risco de desperdício**: soma os pontos quando a umidade está alta,
-  a temperatura muito baixa ou a luminosidade muito baixa (somando até 100%).
-- **Recomendação final**: combina o risco com os limites de umidade e
-  temperatura para definir a ação por setor.
+  - `< 20 °C` → BAIXA
+  - `20 – 30 °C` → IDEAL
+  - `> 30 °C` → ALTA
+- **Luz (valor bruto do LDR, 0 a 1023)**
+  - `> 600` → BAIXA
+  - `400 – 600` → IDEAL
+  - `≤ 400` → ALTA
+- **Risco de desperdício (0 a 100%)**: parte do estado da umidade
+  (`EXCESSO` = +90, `UMIDO` = +60, `IDEAL` = +20, `SECO` = 0) e soma
+  pontos extras quando, com o solo já úmido, a temperatura está baixa ou
+  a luminosidade está baixa — situações em que a planta consome menos
+  água e irrigar gera desperdício.
+- **Recomendação por setor**
+  - `EXCESSO` → **NAO IRRIGAR** (risco de doenças/perda de raiz)
+  - `UMIDO` → **NAO IRRIGAR** (irrigar agora seria desperdício)
+  - `SECO` + temperatura `ALTA` + luz `ALTA` → **IRRIGAR IMEDIATO**
+  - `SECO` (demais casos) → **IRRIGAR URGENTE**
+  - Caso contrário → **MONITORAR**
 
 Esses valores podem ser ajustados facilmente nas constantes do início do
 arquivo `main.py`.

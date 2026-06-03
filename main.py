@@ -11,11 +11,15 @@ PASTA_DADOS = "dados"
 ARQUIVO_LOG = os.path.join(PASTA_LOGS, "agrosmart.log")
 ARQUIVO_DADOS = os.path.join(PASTA_DADOS, "banco.json")
 
-UMIDADE_BAIXA = 30
-UMIDADE_ALTA = 70
-TEMP_ALTA = 32
-TEMP_BAIXA = 10
-LUZ_BAIXA = 200
+UMIDADE_SECO = 20
+UMIDADE_IDEAL_MAX = 60
+UMIDADE_UMIDO_MAX = 70
+
+TEMP_BAIXA_MAX = 20
+TEMP_IDEAL_MAX = 30
+
+LUZ_BAIXA_MIN = 600
+LUZ_IDEAL_MIN = 400
 
 CUSTO_LITRO_AGUA = 0.012
 CONSUMO_REFERENCIA_LHA = 5000
@@ -141,9 +145,9 @@ def cadastrar_propriedade():
 def ler_sensor_arduino(setor):
     return {
         "setor": setor,
-        "umidade": round(random.uniform(15, 90), 1),
+        "umidade": round(random.uniform(0, 100), 1),
         "temperatura": round(random.uniform(8, 38), 1),
-        "luminosidade": random.randint(100, 1000),
+        "luminosidade": random.randint(0, 1023),
         "data_hora": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -168,7 +172,7 @@ def coletar_dados_ambientais():
             print(
                 f"  {setor}: umidade={leitura['umidade']}%  "
                 f"temp={leitura['temperatura']}C  "
-                f"luz={leitura['luminosidade']} lux"
+                f"luz(LDR)={leitura['luminosidade']}"
             )
         salvar_dados()
         logging.info("Coleta automatica registrada (%s setores).", len(novas))
@@ -181,13 +185,14 @@ def coletar_dados_ambientais():
             if setor not in banco["setores"]:
                 raise ValueError("Setor inexistente.")
             umidade = ler_numero(
-                "Umidade (%): ", tipo=float, minimo=0, maximo=100
+                "Umidade do solo (%): ", tipo=float, minimo=0, maximo=100
             )
             temperatura = ler_numero(
                 "Temperatura (C): ", tipo=float, minimo=-20, maximo=60
             )
             luminosidade = ler_numero(
-                "Luminosidade (lux): ", tipo=int, minimo=0, maximo=2000
+                "Luz - valor do LDR (0-1023): ",
+                tipo=int, minimo=0, maximo=1023,
             )
         except ValueError as erro:
             print(f"[ERRO] {erro}")
@@ -218,23 +223,33 @@ def ultima_leitura_por_setor():
 
 
 def classificar_umidade(umidade):
-    if umidade < UMIDADE_BAIXA:
-        return "BAIXA - solo seco"
-    if umidade > UMIDADE_ALTA:
-        return "ALTA - solo encharcado"
-    return "IDEAL"
+    if umidade < UMIDADE_SECO:
+        return "SECO"
+    if umidade <= UMIDADE_IDEAL_MAX:
+        return "IDEAL"
+    if umidade <= UMIDADE_UMIDO_MAX:
+        return "UMIDO"
+    return "EXCESSO"
 
 
 def classificar_temperatura(temp):
-    if temp > TEMP_ALTA:
-        return "ALTA - calor intenso"
-    if temp < TEMP_BAIXA:
-        return "BAIXA - frio extremo"
-    return "IDEAL"
+    if temp < TEMP_BAIXA_MAX:
+        return "BAIXA"
+    if temp <= TEMP_IDEAL_MAX:
+        return "IDEAL"
+    return "ALTA"
+
+
+def classificar_luz(ldr):
+    if ldr > LUZ_BAIXA_MIN:
+        return "BAIXA"
+    if ldr > LUZ_IDEAL_MIN:
+        return "IDEAL"
+    return "ALTA"
 
 
 def analisar_ambiente():
-    print("\n--- ANALISE DE UMIDADE E TEMPERATURA ---")
+    print("\n--- ANALISE DE UMIDADE, TEMPERATURA E LUZ ---")
     ultimas = ultima_leitura_por_setor()
     if not ultimas:
         print("[AVISO] Nenhuma leitura registrada ainda.")
@@ -243,44 +258,58 @@ def analisar_ambiente():
     for setor, leitura in ultimas.items():
         print(f"\n{setor}  ({leitura['data_hora']})")
         print(
-            f"  Umidade:      {leitura['umidade']}%  "
+            f"  Umidade do solo: {leitura['umidade']}%  "
             f"-> {classificar_umidade(leitura['umidade'])}"
         )
         print(
-            f"  Temperatura:  {leitura['temperatura']}C  "
+            f"  Temperatura:     {leitura['temperatura']}C  "
             f"-> {classificar_temperatura(leitura['temperatura'])}"
         )
-        print(f"  Luminosidade: {leitura['luminosidade']} lux")
+        print(
+            f"  Luz (LDR):       {leitura['luminosidade']}  "
+            f"-> {classificar_luz(leitura['luminosidade'])}"
+        )
 
 
 def calcular_risco_desperdicio(leitura):
+    solo = classificar_umidade(leitura["umidade"])
+    temp = classificar_temperatura(leitura["temperatura"])
+    luz = classificar_luz(leitura["luminosidade"])
+
     risco = 0
-    if leitura["umidade"] > UMIDADE_ALTA:
+    if solo == "EXCESSO":
+        risco += 90
+    elif solo == "UMIDO":
         risco += 60
-    elif leitura["umidade"] > 50:
-        risco += 30
-
-    if leitura["temperatura"] < TEMP_BAIXA:
+    elif solo == "IDEAL":
         risco += 20
 
-    if leitura["luminosidade"] < LUZ_BAIXA:
-        risco += 20
+    if solo != "SECO":
+        if temp == "BAIXA":
+            risco += 10
+        if luz == "BAIXA":
+            risco += 10
 
     return min(risco, 100)
 
 
 def gerar_recomendacao(leitura):
-    risco = calcular_risco_desperdicio(leitura)
+    solo = classificar_umidade(leitura["umidade"])
+    temp = classificar_temperatura(leitura["temperatura"])
+    luz = classificar_luz(leitura["luminosidade"])
 
-    if risco >= 60:
+    if solo == "EXCESSO":
         return ("NAO IRRIGAR",
-                "Condicoes indicam alto risco de desperdicio.")
-    if leitura["umidade"] < UMIDADE_BAIXA and leitura["temperatura"] > 20:
+                "Solo encharcado. Risco de doencas e perda de raiz.")
+    if solo == "UMIDO":
+        return ("NAO IRRIGAR",
+                "Solo ja umido. Irrigar agora seria desperdicio.")
+    if solo == "SECO" and temp == "ALTA" and luz == "ALTA":
+        return ("IRRIGAR IMEDIATO",
+                "Solo seco com calor e luz forte. Cultura em estresse idrico.")
+    if solo == "SECO":
         return ("IRRIGAR URGENTE",
-                "Solo seco e temperatura alta. Cultura em estresse idrico.")
-    if leitura["umidade"] < 50:
-        return ("IRRIGAR MODERADAMENTE",
-                "Umidade abaixo do ideal. Aplicar irrigacao leve.")
+                "Solo seco. Cultura precisa de agua.")
     return ("MONITORAR",
             "Condicoes estaveis. Aguardar a proxima leitura.")
 
@@ -321,10 +350,8 @@ def calcular_economia():
     consumo_inteligente = 0.0
     for _, leitura in ultimas.items():
         acao, _ = gerar_recomendacao(leitura)
-        if acao == "IRRIGAR URGENTE":
+        if acao in ("IRRIGAR IMEDIATO", "IRRIGAR URGENTE"):
             consumo_inteligente += CONSUMO_REFERENCIA_LHA * area_setor
-        elif acao == "IRRIGAR MODERADAMENTE":
-            consumo_inteligente += (CONSUMO_REFERENCIA_LHA / 2) * area_setor
 
     economia_litros = consumo_padrao - consumo_inteligente
     economia_reais = economia_litros * CUSTO_LITRO_AGUA
