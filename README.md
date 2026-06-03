@@ -203,6 +203,8 @@ ainda maior, contribuindo para uma agricultura mais sustentável.
 
 ## Integrantes do grupo
 
-- Nome Completo 1 – RM XXXXXX
-- Nome Completo 2 – RM XXXXXX
-- Nome Completo 3 – RM XXXXXX
+- Thiago Alexandre Santos Silva – RM 571342
+- Fabricio Mendoza - RM 571571
+- Felipe Anderson Silva Peres - RM 573654
+- Augusto - RM 571119
+- Julia - RM 569203
