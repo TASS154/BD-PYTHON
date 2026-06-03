@@ -1,0 +1,15 @@
+2026-06-02 22:11:22 [INFO] === Sistema AgroSmart iniciado ===
+2026-06-02 22:11:22 [INFO] Setor 1: risco=30% acao=MONITORAR
+2026-06-02 22:11:22 [INFO] Setor 2: risco=60% acao=NAO IRRIGAR
+2026-06-02 22:11:22 [INFO] Setor 3: risco=0% acao=IRRIGAR MODERADAMENTE
+2026-06-02 22:11:22 [INFO] Economia: 41667 L (R$ 500.00)
+2026-06-02 22:17:19 [INFO] === Sistema AgroSmart iniciado ===
+2026-06-02 22:17:19 [INFO] Nenhum banco existente. Iniciando em branco.
+2026-06-02 22:17:50 [INFO] Dados salvos em dados\banco.json
+2026-06-02 22:17:50 [INFO] Agricultor cadastrado: JASON
+2026-06-02 22:18:04 [INFO] Dados salvos em dados\banco.json
+2026-06-02 22:18:04 [INFO] Propriedade cadastrada: HE (2 setores)
+2026-06-02 22:18:10 [INFO] Dados salvos em dados\banco.json
+2026-06-02 22:18:10 [INFO] Coleta automatica registrada (2 setores).
+2026-06-02 22:18:27 [INFO] Setor 1: risco=30% acao=MONITORAR
+2026-06-02 22:18:27 [INFO] Setor 2: risco=30% acao=MONITORAR

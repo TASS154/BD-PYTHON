@@ -1,0 +1,33 @@
+{
+  "agricultor": {
+    "nome": "JASON",
+    "idade": 73,
+    "cidade": "CANADA",
+    "cadastrado_em": "2026-06-02T22:17:50"
+  },
+  "propriedade": {
+    "nome": "HE",
+    "area_hectares": 52.0,
+    "cultura": "SOJA"
+  },
+  "setores": [
+    "Setor 1",
+    "Setor 2"
+  ],
+  "leituras": [
+    {
+      "setor": "Setor 1",
+      "umidade": 63.3,
+      "temperatura": 23.9,
+      "luminosidade": 558,
+      "data_hora": "2026-06-02T22:18:10"
+    },
+    {
+      "setor": "Setor 2",
+      "umidade": 64.2,
+      "temperatura": 24.5,
+      "luminosidade": 337,
+      "data_hora": "2026-06-02T22:18:10"
+    }
+  ]
+}
